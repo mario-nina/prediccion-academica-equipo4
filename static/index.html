@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Predicción Académica · Equipo 4</title>
+  <link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+  <main class="container">
+    <header>
+      <p class="eyebrow">PROYECTO INTEGRADOR · EQUIPO 4</p>
+      <h1>Predicción del rendimiento académico</h1>
+      <p>Estima la nota final de un estudiante antes de rendir el examen final.</p>
+    </header>
+
+    <form id="formulario">
+      <section>
+        <h2>Información académica</h2>
+        <div class="grid">
+          <label>Gestión<input name="gestion" type="number" min="2023" max="2035" step="1" value="2025" required></label>
+          <label>Periodo<select name="periodo"><option value="I">I</option><option value="II">II</option></select></label>
+          <label class="wide">Asignatura<select name="asignatura">
+            <option>Programación I</option><option>Programación II</option><option>Bases de Datos</option>
+            <option>Estructuras de Datos</option><option>Ingeniería de Software</option>
+          </select></label>
+        </div>
+      </section>
+      <section>
+        <h2>Evaluaciones</h2>
+        <div class="grid">
+          <label>Entregable 1<input name="entregable_1" type="number" min="0" max="100" step="0.01" value="75" required></label>
+          <label>Entregable 2<input name="entregable_2" type="number" min="0" max="100" step="0.01" value="68" required></label>
+          <label>Entregable 3<input name="entregable_3" type="number" min="0" max="100" step="0.01" value="82" required></label>
+          <label>Entregable 4<input name="entregable_4" type="number" min="0" max="100" step="0.01" value="70" required></label>
+          <label>Actividades presentadas (%)<input name="porcentaje_entregas" type="number" min="0" max="100" step="0.01" value="90" required></label>
+          <label>Puntualidad (%)<input name="puntualidad" type="number" min="0" max="100" step="0.01" value="85" required></label>
+        </div>
+      </section>
+      <section>
+        <h2>Información complementaria</h2>
+        <div class="grid">
+          <label>Asistencia (%)<input name="asistencia" type="number" min="0" max="100" step="0.01" value="80" required></label>
+          <label>Horas de estudio semanales<input name="horas_estudio" type="number" min="0" max="40" step="0.1" value="8" required></label>
+          <label>Participación (0–10)<input name="participacion_clase" type="number" min="0" max="10" step="0.1" value="7" required></label>
+          <label>Promedio anterior<input name="promedio_anterior" type="number" min="0" max="100" step="0.01" value="72" required></label>
+        </div>
+      </section>
+      <button id="boton" type="submit">Predecir nota final</button>
+    </form>
+    <section id="resultado" class="resultado" aria-live="polite" hidden></section>
+    <footer>Datos y modelo sintéticos. La predicción es orientativa, no una calificación oficial. · <a href="/docs">Documentación de API</a></footer>
+  </main>
+  <script>
+    const formulario = document.getElementById('formulario');
+    const resultado = document.getElementById('resultado');
+    const boton = document.getElementById('boton');
+    formulario.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      resultado.hidden = true;
+      boton.disabled = true;
+      boton.textContent = 'Calculando…';
+      const entrada = Object.fromEntries(new FormData(formulario));
+      for (const [nombre, valor] of Object.entries(entrada)) {
+        if (!['periodo', 'asignatura'].includes(nombre)) entrada[nombre] = Number(valor);
+      }
+      try {
+        const respuesta = await fetch('/predecir', {
+          method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(entrada)
+        });
+        const datos = await respuesta.json();
+        if (!respuesta.ok) throw new Error(respuesta.status === 422 ? 'Revisa los valores ingresados.' : 'No se pudo realizar la predicción.');
+        resultado.innerHTML = `<p class="eyebrow">RESULTADO DE LA PREDICCIÓN</p><strong>${datos.nota_final_estimada.toFixed(2)} / 100</strong><p>Evaluación continua calculada: ${datos.evaluacion_continua.toFixed(2)} / 100</p>`;
+      } catch (error) {
+        resultado.textContent = error.message;
+      } finally {
+        resultado.hidden = false;
+        boton.disabled = false;
+        boton.textContent = 'Predecir nota final';
+      }
+    });
+  </script>
+</body>
+</html>
